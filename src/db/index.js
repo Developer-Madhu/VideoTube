@@ -6,7 +6,6 @@ dotenv.config({
 })
 const ConnectDB = async () => {
     try{
-        // const dbconnect = await mongoose.connect(`mongodb+srv://vidtubeuser:vidtubeuser12@cluster0.gsfsr.mongodb.net/${DBNAME}`)
         const dbconnect = await mongoose.connect(`${process.env.MONGOURL}/${DBNAME}`)
         console.log('\nMongoDB Connected !')
         console.log(`DB Details : ${dbconnect.connection.host}`)
