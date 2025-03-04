@@ -11,7 +11,6 @@ app.use(express.static('public'))
 
 app.use("/api/v1/healthcheck", healthCheckRoutes)
 
-
 app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
   });
