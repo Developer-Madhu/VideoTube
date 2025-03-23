@@ -13,7 +13,7 @@ const registerUser = asyncHandler(async (req, res) => {
     if (existingUser) {
         throw new ApiError(409, "You already registered, please login")
     }
-    
+    console.log(req.files)
     const avatarPath = req.files?.avatar[0]?.path
     const coverimgPath = req.files?.coverimg[0]?.path
     if(!avatarPath){
