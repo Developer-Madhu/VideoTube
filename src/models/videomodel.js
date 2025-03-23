@@ -9,7 +9,7 @@ const videoSchema = new Schema(
         description: { type: String, required: true },
         views: { type: Number, default: 0 },
         duration: { type: Number, required: true },
-        isPublished: { type: boolean, default: 0 },
+        isPublished: { type: Boolean, default: 0 },
         owner: { type: Schema.Types.ObjectId, ref: "User" },
     },
     {timestamps: true}

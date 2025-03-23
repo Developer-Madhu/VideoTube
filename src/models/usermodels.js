@@ -12,8 +12,8 @@ const userSchema = new Schema(
         coverImg: { type: String },
         watchHistory: [{ type: Schema.Types.ObjectId, ref: "Video" }],
         refreshToken: { type: String },
-        timestamps: { required: true }
-    }
+    },
+    {timestamps: true }
 )
 
 userSchema.pre("save", async function (next) {

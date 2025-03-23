@@ -2,9 +2,9 @@ import dotenv from 'dotenv'
 import { app } from "../src/app.js";
 import ConnectDB from './db/index.js';
 
-dotenv.config({
-    path: './.env'
-})
+// Configure dotenv to use root .env file
+
+dotenv.config()
 const PORT = process.env.PORT || 8000
 
 ConnectDB()

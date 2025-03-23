@@ -18,6 +18,8 @@
   "author": "Developer Madhu",
   "license": "ISC",
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
     "nodemon": "^3.1.9"
   },
   "dependencies": {
