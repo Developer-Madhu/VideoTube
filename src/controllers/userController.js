@@ -3,24 +3,25 @@ import { User } from '../models/usermodels.js'
 import { ApiError } from '../utils/ApiError.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import { CloudinaryUpload, deleteFileFromCloudinary } from "../utils/Cloudinary.js";
-
+import dotenv from 'dotenv'
+dotenv.config()
 
 const generateRefreshAndAccessToken = async (userId) => {
-   try {
-     const findUser = await User.findById(userId)
-     if (!findUser) {
-         throw new ApiError(404, "User Not Found!")
-     }
-     const accessToken = findUser.tokenGenerator()
-     const refreshToken = findUser.refreshTokens()
- 
-     findUser.refreshToken = refreshToken
-     await findUser.save({ validateBeforeSave: false })
- 
-     return { accessToken, refreshToken }
-   } catch (error) {
-    throw new ApiError(500, "Error generating tokens for users")
-   }
+    try {
+        const findUser = await User.findById(userId)
+        if (!findUser) {
+            throw new ApiError(404, "User Not Found!")
+        }
+        const accessToken = findUser.tokenGenerator()
+        const refreshToken = findUser.refreshTokens()
+
+        findUser.refreshToken = refreshToken
+        await findUser.save({ validateBeforeSave: false })
+
+        return { accessToken, refreshToken }
+    } catch (error) {
+        throw new ApiError(500, "Error generating tokens for users")
+    }
 }
 
 
@@ -84,4 +85,35 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 })
 
-export { registerUser }
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body
+    if (!email || !password) {
+        return res.json({ msg: "Please fill all the fields!" })
+    }
+    const existedUser = await User.findOne({ $or: [{email}, {password}] })
+    if(existedUser){
+        return res.json({msg: "User Already exists"})
+    }
+
+    const crctpass = await User.CheckPassword(password)
+    if(!crctpass){
+        return res.json({msg: "Invalid Password!"})
+    }
+    const {refreshToken, accessToken} = await generateRefreshAndAccessToken(existedUser._id)
+
+    const loggedUser = await User.findById(existedUser._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+    }
+
+    return res.status(200)
+     .cookie("accessToken", accessToken, options)
+     .cookie("refreshToken", refreshToken, options)
+     .json({msg: "User Login Successfull!"})
+    
+
+})
+
+export { registerUser, loginUser }
