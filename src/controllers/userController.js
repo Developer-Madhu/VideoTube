@@ -4,6 +4,26 @@ import { ApiError } from '../utils/ApiError.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import { CloudinaryUpload, deleteFileFromCloudinary } from "../utils/Cloudinary.js";
 
+
+const generateRefreshAndAccessToken = async (userId) => {
+   try {
+     const findUser = await User.findById(userId)
+     if (!findUser) {
+         throw new ApiError(404, "User Not Found!")
+     }
+     const accessToken = findUser.tokenGenerator()
+     const refreshToken = findUser.refreshTokens()
+ 
+     findUser.refreshToken = refreshToken
+     await findUser.save({ validateBeforeSave: false })
+ 
+     return { accessToken, refreshToken }
+   } catch (error) {
+    throw new ApiError(500, "Error generating tokens for users")
+   }
+}
+
+
 const registerUser = asyncHandler(async (req, res) => {
     const { fullname, username, password, email } = req.body;
     if ([fullname, username, password, email].some(field => field?.trim() == "")) {
@@ -19,9 +39,6 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!avatarPath) {
         throw new ApiError(400, "Avatar file missing..!")
     }
-
-    // const avatarUpload = await CloudinaryUpload(avatarPath)
-    // const coverimgUpload = await CloudinaryUpload(coverimgPath)
 
     let coverImg;
     try {
