@@ -178,4 +178,18 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     return res.json({ msg: "Current user fetched successfully!", user })
 })
 
+const updateCurrentUser = asyncHandler(async (req, res) => {
+    const { fullname, username, email } = req.body
+    if(!fullname || !username || !email){
+        return res.json({ msg: "Please fill all the fields to update details!" })
+    }
+    const user = await User.findById(req.user?._id)
+    user.fullname = fullname
+    user.username = username
+    user.email = email
+    await user.save({ validateBeforeSave: false })
+    return res.json({ msg: "Current user updated successfully!", user })
+})
+
+
 export { registerUser, loginUser, refreshAndAccessToken, logoutUser, changeCurrentPassword, getCurrentUser }
