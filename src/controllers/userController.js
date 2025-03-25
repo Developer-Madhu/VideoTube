@@ -4,6 +4,8 @@ import { ApiError } from '../utils/ApiError.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import { CloudinaryUpload, deleteFileFromCloudinary } from "../utils/Cloudinary.js";
 import dotenv from 'dotenv'
+import jwt from 'jsonwebtoken'
+
 dotenv.config()
 
 const generateRefreshAndAccessToken = async (userId) => {
@@ -90,16 +92,16 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!email || !password) {
         return res.json({ msg: "Please fill all the fields!" })
     }
-    const existedUser = await User.findOne({ $or: [{email}, {password}] })
-    if(existedUser){
-        return res.json({msg: "User Already exists"})
+    const existedUser = await User.findOne({ $or: [{ email }, { password }] })
+    if (existedUser) {
+        return res.json({ msg: "User Already exists" })
     }
 
     const crctpass = await User.CheckPassword(password)
-    if(!crctpass){
-        return res.json({msg: "Invalid Password!"})
+    if (!crctpass) {
+        return res.json({ msg: "Invalid Password!" })
     }
-    const {refreshToken, accessToken} = await generateRefreshAndAccessToken(existedUser._id)
+    const { refreshToken, accessToken } = await generateRefreshAndAccessToken(existedUser._id)
 
     const loggedUser = await User.findById(existedUser._id).select("-password -refreshToken")
 
@@ -109,11 +111,71 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     return res.status(200)
-     .cookie("accessToken", accessToken, options)
-     .cookie("refreshToken", refreshToken, options)
-     .json({msg: "User Login Successfull!"})
-    
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json({ msg: "User Login Successfull!" })
 
 })
 
-export { registerUser, loginUser }
+const refreshAndAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookie.refreshToken
+    if (!incomingRefreshToken) {
+        return res.json({ msg: "Required Refresh Token" })
+    }
+    try {
+
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.SECRET_TOKENKEY)
+        const user = await User.findById(decodedToken?._id)
+        if (!user) {
+            return res.json({ msg: "Invalid refresh token found!" })
+        }
+
+        if (incomingRefreshToken !== user?.refreshToken) {
+            return res.json({ msg: "Invalid user token found!" })
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production'
+        }
+        const { refreshToken: newRefreshToken, accessToken } = await generateRefreshAndAccessToken(user._id)
+        return res
+            .status(200)
+            .cookie('accessToken', accessToken, options)
+            .cookie('refreshToken', newRefreshToken, options)
+            .json({ msg: "Token Refreshed Successfully!" })
+
+    } catch (err) {
+        return res.status(500).json({ msg: `Something went wrong : ${err}` })
+    }
+})
+
+const logoutUser = asyncHandler(async (req, res) => {
+    const user = await User.findByIdAndUpdate(req.user._id, { $set: { refreshToken: "" } }, { new: true })
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+    }
+    res.clearCookie("accessToken", options)
+    res.clearCookie("refreshToken", options)
+    return res.status(200).json({ msg: "Logged out successfully!" })
+})
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body
+    const user = await User.findById(req.user?._id)
+    const isPasswordCorrect = await user.CheckPassword(currentPassword)
+    if (!isPasswordCorrect) {
+        return res.json({ msg: "Please enter the valid password!" })
+    }
+    user.password = newPassword
+    await user.save({ validateBeforeSave: false })
+    return res.json({ msg: "Password changed successfully!" })
+})
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id).select("-password -refreshToken")
+    return res.json({ msg: "Current user fetched successfully!", user })
+})
+
+export { registerUser, loginUser, refreshAndAccessToken, logoutUser, changeCurrentPassword, getCurrentUser }
