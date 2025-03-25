@@ -179,16 +179,27 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateCurrentUser = asyncHandler(async (req, res) => {
-    const { fullname, username, email } = req.body
-    if(!fullname || !username || !email){
+    const { fullname,  email } = req.body
+    if(!fullname || !email){
         return res.json({ msg: "Please fill all the fields to update details!" })
     }
-    const user = await User.findById(req.user?._id)
-    user.fullname = fullname
-    user.username = username
-    user.email = email
+    const user = await User.findByIdAndUpdate(req.user?._id, { $set: { fullname, email } }, { new: true })
     await user.save({ validateBeforeSave: false })
     return res.json({ msg: "Current user updated successfully!", user })
+})
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const { avatar } = req.body
+    if(!avatar){
+        return res.json({ msg: "Please upload the avatar!" })
+    }
+    const user = await User.findByIdAndUpdate(req.user?._id, { $set: { avatar } }, { new: true })
+    if(!user){
+        return res.json({ msg: "User not found! - Please try again later!" })
+    }
+    await user.save({ validateBeforeSave: false })
+    return res.json({ msg: "Current user avatar updated successfully!", user })
+
 })
 
 
