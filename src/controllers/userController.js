@@ -179,8 +179,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateCurrentUser = asyncHandler(async (req, res) => {
-    const { fullname,  email } = req.body
-    if(!fullname || !email){
+    const { fullname, email } = req.body
+    if (!fullname || !email) {
         return res.json({ msg: "Please fill all the fields to update details!" })
     }
     const user = await User.findByIdAndUpdate(req.user?._id, { $set: { fullname, email } }, { new: true })
@@ -189,18 +189,34 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-    const { avatar } = req.body
-    if(!avatar){
+    const newavatar = req.file?.path;
+    if (!newavatar) {
         return res.json({ msg: "Please upload the avatar!" })
     }
-    const user = await User.findByIdAndUpdate(req.user?._id, { $set: { avatar } }, { new: true })
-    if(!user){
-        return res.json({ msg: "User not found! - Please try again later!" })
+    const avatarUpdatedUrl = await CloudinaryUpload(newavatar)
+    if (avatarUpdatedUrl.url) {
+        const user = await User.findByIdAndUpdate(req.user?._id, { $set: { avatar: avatarUpdatedUrl.url } }, { new: true })
+        return res.json({ msg: "Current user avatar updated successfully!", user })
+    } else {
+        return res.json({ msg: "Unable to update the Avatar" })
     }
-    await user.save({ validateBeforeSave: false })
-    return res.json({ msg: "Current user avatar updated successfully!", user })
+})
+
+const updateUserCoverImg = asyncHandler(async (req, res) => {
+    const newCoverImg = req.file?.path;
+    if (!newCoverImg) {
+        return res.json({ msg: "Please upload the Cover image!" })
+    }
+    const coverImgUpdatedUrl = await CloudinaryUpload(newCoverImg)
+    if (coverImgUpdatedUrl.url) {
+        const user = await User.findByIdAndUpdate(req.user?._id, { $set: { coverImg: coverImgUpdatedUrl.url } }, { new: true })
+        return res.json({ msg: "Current user Cover Image updated successfully!", user })
+    } else {
+        return res.json({ msg: "Unable to update the Avatar" })
+    }
+
 
 })
 
 
-export { registerUser, loginUser, refreshAndAccessToken, logoutUser, changeCurrentPassword, getCurrentUser }
+export { registerUser, loginUser, refreshAndAccessToken, logoutUser, changeCurrentPassword, getCurrentUser, updateUserAvatar, updateCurrentUser, updateUserAvatar, updateUserCoverImg }
